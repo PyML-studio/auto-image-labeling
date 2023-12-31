@@ -63,8 +63,14 @@ def resize_polygons(polygons, scale_factor):
             polygon, xfact=scale_factor, yfact=scale_factor,
             origin=(0, 0)
         )
-        resized_polygons.append(resized_polygon)
+        # round coordinates
+        rounded_coords = [
+            (int(round(x)), int(round(y)))
+            for x, y in resized_polygon.exterior.coords
+        ]
+        resized_polygons.append(Polygon(rounded_coords))
         print('resized_polygon:', resized_polygon)
+
     return resized_polygons
 
 
@@ -78,14 +84,14 @@ def save_polygons(image_path, polygons, output_dir):
     if os.path.exists(output_filename):
         with open(output_filename, 'rt') as fp_in:
             d_past = json.load(fp_in)
-            polygons_past.extend(d_past['geometries'])
+            polygons_past.extend(d_past['polygons'])
     else:
         polygons_past = []
 
     list_wkt = [polygon.wkt for polygon in polygons]
     data = {
         'image_path': image_path,
-        'geometries': polygons_past + list_wkt
+        'polygons': polygons_past + list_wkt
     }
 
     with open(output_filename, 'wt') as fp:
