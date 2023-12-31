@@ -1,3 +1,4 @@
+import logging
 import numpy as np
 import torch
 import cv2
@@ -5,17 +6,23 @@ from segment_anything import sam_model_registry, SamPredictor
 
 from . import utils
 
+logger = logging.getLogger('sam_utils')
+logger.setLevel(logging.INFO)
+
 
 def setup_sam(
         model_type="vit_b",
         sam_checkpoint="models/sam_vit_b_01ec64.pth",
     ):
+    logger.info('setup_sam()')
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
+    logger.info('sam mdoel is loaded')
     sam.to(device=device)
 
     predictor = SamPredictor(sam)
+    logger.info('predictor ready')
     return predictor
 
 

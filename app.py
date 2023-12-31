@@ -1,4 +1,5 @@
 import os
+import logging
 from datetime import datetime
 from PIL import Image, ImageTk
 import numpy as np
@@ -9,6 +10,8 @@ from tkinter import filedialog, Button
 from auto_image_labeling import sam_utils
 from auto_image_labeling import utils
 
+logger = logging.getLogger('app')
+logger.setLevel(logging.INFO)
 img_buff_x = 0
 
 
@@ -106,6 +109,7 @@ class ImageEditor:
         )
 
     def load_directory(self):
+        logger.info('load_directory ...')
         # Use directory dialog to select an image directory
         #directory = filedialog.askdirectory()
         directory = filedialog.askdirectory(initialdir=self.default_directory)
@@ -120,10 +124,12 @@ class ImageEditor:
             self.load_image()
 
     def load_image(self):
+        logger.info('load_image ...')
         self.reset_points()
         if 0 <= self.index < len(self.image_files):
             # Open an image file
             image_path = self.image_files[self.index]
+            logger.info(f'image_path: {image_path}')
             self.current_img_path = image_path
             img = Image.open(image_path)
             img, scale_factor = utils.resize_image(
@@ -154,7 +160,7 @@ class ImageEditor:
         x2, y2 = (event.x + radius), (event.y + radius)
         point_id = self.canvas.create_oval(x1, y1, x2, y2, fill="red")
         self.points.append(((event.x, event.y), point_id))
-        print('(event.x, event.y):', (event.x - img_buff_x, event.y))
+        logger.info('(event.x, event.y):', (event.x - img_buff_x, event.y))
 
         self.generate_polygons()
 
@@ -168,7 +174,7 @@ class ImageEditor:
             coords = polygon.exterior.coords
             coords = np.array(coords).astype(np.int32)
             coords[:, 0] += img_buff_x
-            print('2:', polygon)
+            logger.info('2:', polygon)
             #flat_coords = [coord for pair in coords for coord in pair]
             flat_coords = coords.flatten().tolist()
             polygon_id = self.canvas.create_polygon(
