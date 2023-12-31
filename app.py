@@ -6,8 +6,8 @@ import numpy as np
 import tkinter as tk
 from tkinter import filedialog, Button
 
-from smart_image_labeling import sam_utils
-from smart_image_labeling import utils
+from auto_image_labeling import sam_utils
+from auto_image_labeling import utils
 
 img_buff_x = 0
 
