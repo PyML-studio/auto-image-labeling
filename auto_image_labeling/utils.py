@@ -75,7 +75,7 @@ def resize_polygons(polygons, scale_factor):
 
 
 def save_polygons(image_path, polygons, output_dir):
-    unique_id = os.path.basename(image_path)
+    unique_id = os.path.basename(image_path)[:-4]
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
