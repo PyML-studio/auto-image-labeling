@@ -64,8 +64,12 @@ class ImageEditor:
         self.reset_button.pack(side="top", pady=(50, 0))
         self.save_button = tk.Button(self.panel, text="Save Polygons", command=self.save_current_polygons)
         self.save_button.pack(side="top", pady=(50, 0))
+        self.next_button = tk.Button(self.panel, text="Next", command=self.next_image)
+        self.next_button.pack(side="top", pady=(100, 0))
+        self.previous_button = tk.Button(self.panel, text="Previous", command=self.previous_image)
+        self.previous_button.pack(side="top", pady=(30, 0))
 
-        # Bind click event to canvas
+        # Bind mouse-click event to canvas
         self.canvas.bind("<Button-1>", self.add_point)
         # Bind right and left arrow keys to browse images
         self.root.bind("<Right>", self.next_image)
@@ -182,18 +186,12 @@ class ImageEditor:
             self.polygon_ids.append(polygon_id)
 
     def next_image(self, event):
-        # save current polygons
-        self.save_current_polygons()
-
         # Go to next image
         if self.index < len(self.image_files) - 1:
             self.index += 1
             self.load_image()
 
     def previous_image(self, event):
-        # save current polygons
-        self.save_current_polygons()
-
         # Go to previous image
         if self.index > 0:
             self.index -= 1
