@@ -73,12 +73,12 @@ def save_polygons(image_path, polygons, output_dir):
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    existing_polygons = []
+    polygons_past = []
     output_filename = os.path.join(output_dir, f'{unique_id}.json')
     if os.path.exists(output_filename):
         with open(output_filename, 'rt') as fp_in:
             d_past = json.load(fp_in)
-            polygons_past = d_past['geometries']
+            polygons_past.extend(d_past['geometries'])
     else:
         polygons_past = []
 
