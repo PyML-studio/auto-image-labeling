@@ -28,7 +28,7 @@ def setup_sam(
 
 def run_predictor(predictor, points):
     points_array = np.array(points)
-    label_array = np.array([i for i in range(1, len(points)+1)])
+    label_array = np.array([1] * len(points))
     masks, _, _ = predictor.predict(
         point_coords=points_array,
         point_labels=label_array,
