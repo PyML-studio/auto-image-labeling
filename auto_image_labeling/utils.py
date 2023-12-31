@@ -82,10 +82,10 @@ def save_polygons(image_path, polygons, output_dir):
     else:
         polygons_past = []
 
-    list_wkt = [polygon.wkt for polygon in polygons + polygons_past]
+    list_wkt = [polygon.wkt for polygon in polygons]
     data = {
         'image_path': image_path,
-        'geometries': list_wkt
+        'geometries': polygons_past + list_wkt
     }
 
     with open(output_filename, 'wt') as fp:
