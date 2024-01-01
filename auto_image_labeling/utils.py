@@ -1,24 +1,36 @@
 import os
+import json
+import logging
+
 from PIL import Image
 import cv2
 from shapely.geometry import Polygon
 from shapely import affinity
-import json
 
+logger = logging.getLogger('utils')
+logger.setLevel(logging.INFO)
+logger.addHandler(logging.StreamHandler())
 
 def resize_image(image, new_width, new_height):
     orig_width, orig_height = image.size
-    
-    orig_aspect = orig_width / orig_height
-    new_aspect = new_width / new_height
-    
-    # Scale the image while preserving the aspect ratio
-    if orig_aspect >= new_aspect:
-        # Original image is wider
-        scale_factor = new_width / orig_width
+
+    # scaling width
+    w1 = new_width
+    r1 = w1 / orig_width
+    h1 = int(r1 * orig_height)
+    # sacling height
+    h2 = new_height
+    r2 = h2 / orig_height
+    w2 = int(r2 * orig_width)
+    if h1 <= new_height and w2 <= new_width:
+        if h1 * w1 > h2 * w2:
+            scale_factor = r1
+        else:
+            scale_factor = r2
+    elif h1 <= new_height:
+        scale_factor = r1
     else:
-        # Original image is taller
-        scale_factor = new_height / orig_height
+        scale_factor = r2
     
     # Calculate new dimensions
     resized_width = int(orig_width * scale_factor)
@@ -56,7 +68,7 @@ def polygonize(
 
 
 def resize_polygons(polygons, scale_factor):
-    print('resize_polygons:', scale_factor)
+    logger.info(f'resize_polygons: scale_factor={scale_factor}')
     resized_polygons = []
     for polygon in polygons:
         resized_polygon = affinity.scale(
@@ -69,7 +81,7 @@ def resize_polygons(polygons, scale_factor):
             for x, y in resized_polygon.exterior.coords
         ]
         resized_polygons.append(Polygon(rounded_coords))
-        print('resized_polygon:', resized_polygon)
+        logger.info(f'resized_polygon: {resized_polygon}')
 
     return resized_polygons
 
