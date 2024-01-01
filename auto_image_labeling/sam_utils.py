@@ -8,7 +8,7 @@ from . import utils
 
 logger = logging.getLogger('sam_utils')
 logger.setLevel(logging.INFO)
-
+logger.addHandler(logging.StreamHandler())
 
 def setup_sam(
         model_type="vit_b",
@@ -35,9 +35,9 @@ def run_predictor(predictor, points):
         #ask_input=mask_input[None, :, :],
         multimask_output=False,
     )
-    print(masks.shape)
+    logger.info(f'mask shape: {masks.shape}')
     polygons = utils.polygonize(masks[0].astype('uint8') * 255)
-    print(polygons)
+    logger.info(f'polygons: {polygons}')
     return polygons
 
 
