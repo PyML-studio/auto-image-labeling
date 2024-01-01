@@ -12,7 +12,7 @@ from auto_image_labeling import utils
 
 logger = logging.getLogger('app')
 logger.setLevel(logging.INFO)
-img_buff_x = 0
+logger.addHandler(logging.StreamHandler())
 
 
 class ImageEditor:
@@ -31,42 +31,40 @@ class ImageEditor:
 
         self.default_directory = default_directory or os.getcwd()
 
+        # Set a fixed canvas size
+        self.canvas_width = 600
+        self.canvas_height = 600
+
         # Create a Canvas to insert the image
         #self.canvas = tk.Canvas(root, cursor="cross")
         #self.canvas.pack(fill="both", expand=True)
 
         # Create left panel
-        self.panel = tk.Frame(root, width=200, bg='#212121')
-        self.panel.pack(side="left", fill="y")
-
-        self.left_buffer = tk.Frame(root, width=100, height=600, bg='#7a7a79')
-        self.left_buffer.pack(side='left', fill='y')
-
-        # Set a fixed canvas size
-        self.canvas_width = 600
-        self.canvas_height = 600
-
+        panel = tk.Frame(root, width=120, height=600, bg='#212121')
+        left_buffer = tk.Frame(root, width=200, height=600, bg='#7a7a79')
         # Create a Canvas to insert the image with fixed dimensions
         self.canvas = tk.Canvas(
             root, bg='white',
-            width=self.canvas_width,
-            height=self.canvas_height,
+            width=self.canvas_width, height=self.canvas_height,
             cursor="cross")
-        self.canvas.pack(side='left', fill="both", expand=True)
+        right_buffer = tk.Frame(root, width=80, height=600, bg='#7a7a79')
 
-        self.right_buffer = tk.Frame(root, width=100, height=600, bg='#7a7a79')
-        self.right_buffer.pack(side='left', fill='y')
+        panel.pack(side="left", fill="y", expand=True)
+        left_buffer.pack(side='left', fill="y", expand=True)
+        self.canvas.pack(side='left', fill="both", expand=True)
+        right_buffer.pack(side='left', fill="y", expand=True)
 
         # buttons
-        self.load_button = tk.Button(self.panel, text="Load Directory", command=self.load_directory)
+        self.load_button = tk.Button(panel, text="Load Directory", command=self.load_directory)
+        self.reset_button = tk.Button(panel, text="Reset Points", command=self.reset_points)
+        self.save_button = tk.Button(panel, text="Save Polygons", command=self.save_current_polygons)
+        self.next_button = tk.Button(panel, text="Next", command=self.next_image)
+        self.previous_button = tk.Button(panel, text="Previous", command=self.previous_image)
+
         self.load_button.pack(side="top", pady=(100, 0))  # Padding only at the top
-        self.reset_button = tk.Button(self.panel, text="Reset Points", command=self.reset_points)
         self.reset_button.pack(side="top", pady=(50, 0))
-        self.save_button = tk.Button(self.panel, text="Save Polygons", command=self.save_current_polygons)
         self.save_button.pack(side="top", pady=(50, 0))
-        self.next_button = tk.Button(self.panel, text="Next", command=self.next_image)
         self.next_button.pack(side="top", pady=(100, 0))
-        self.previous_button = tk.Button(self.panel, text="Previous", command=self.previous_image)
         self.previous_button.pack(side="top", pady=(30, 0))
 
         # Bind mouse-click event to canvas
@@ -128,17 +126,24 @@ class ImageEditor:
             self.load_image()
 
     def load_image(self):
-        logger.info('load_image ...')
+        logger.info('** load_image **')
         self.reset_points()
         if 0 <= self.index < len(self.image_files):
             # Open an image file
             image_path = self.image_files[self.index]
-            logger.info(f'image_path: {image_path}')
+            logger.info(f'** load_image **  image_path: {image_path}')
             self.current_img_path = image_path
             img = Image.open(image_path)
+            logger.info(f'** load_image **  Original image size: {img.size}')
             img, scale_factor = utils.resize_image(
                 img, self.canvas_width, self.canvas_height)
             self.current_scale_factor = scale_factor
+            center_x = (self.canvas_width - img.width) // 2
+            center_y = (self.canvas_height - img.height) // 2
+            logger.info(f'** load_image **  resized image: {img.size}')
+            logger.info(f'** load_image **  center_x: {center_x}  center_y: {center_y}')
+            self.buffer_x = center_x
+            self.buffer_y = center_y
 
             # Convert the Image object to ImageTk.PhotoImage object
             self.photo = ImageTk.PhotoImage(img)
@@ -149,22 +154,23 @@ class ImageEditor:
                 height=self.canvas_height
             )
             self.canvas.create_image(
-                (self.canvas_width - img.width) // 2,
-                (self.canvas_height - img.height) // 2,
-                anchor="nw",
-                image=self.photo
+                center_x, center_y,
+                anchor="nw", image=self.photo
             )
             img_array = np.array(img, dtype='uint8')
             self.sam_predictor.set_image(img_array)
 
     def add_point(self, event):
+        logger.info(f'add_point -> (event.x, event.y): {(event.x, event.y)}')
         # Add a point (circle) where the user clicks
         radius = 7  # Size of the circle
         x1, y1 = (event.x - radius), (event.y - radius)
         x2, y2 = (event.x + radius), (event.y + radius)
         point_id = self.canvas.create_oval(x1, y1, x2, y2, fill="red")
-        self.points.append(((event.x, event.y), point_id))
-        logger.info('(event.x, event.y):', (event.x - img_buff_x, event.y))
+
+        event_img_x = event.x - self.buffer_x
+        event_img_y = event.y - self.buffer_y
+        self.points.append(((event_img_x, event_img_y), point_id))
 
         self.generate_polygons()
 
@@ -177,8 +183,9 @@ class ImageEditor:
         for polygon in polygons:
             coords = polygon.exterior.coords
             coords = np.array(coords).astype(np.int32)
-            coords[:, 0] += img_buff_x
-            logger.info('2:', polygon)
+            coords[:, 0] += self.buffer_x
+            coords[:, 1] += self.buffer_y
+            logger.info(f'#polygon: {polygon}')
             #flat_coords = [coord for pair in coords for coord in pair]
             flat_coords = coords.flatten().tolist()
             polygon_id = self.canvas.create_polygon(
